@@ -30,24 +30,8 @@ def create_chat_completion(messages):
             {"role": m["role"], "content": m["content"]}
             for m in messages
         ],
-        stream=True,
-        extra_body={
-            "data_sources": [
-                {
-                    "type": "azure_search",
-                    "parameters": {
-                        "endpoint": search_endpoint,
-                        "index_name": search_index_name,
-                        "authentication": {
-                            "type": "api_key",
-                            "key": search_key
-                        }
-                    }
-                }
-            ]
-        }
+        stream=True
     )
-
 
 def handle_chat_prompt(prompt):
     """Echo the user's prompt to the chat window.
@@ -57,7 +41,7 @@ def handle_chat_prompt(prompt):
     st.session_state.messages.append({"role": "user", "content": prompt})
     with st.chat_message("user"):
         st.markdown(prompt)
- 
+
     # Send the user's prompt to Azure OpenAI and display the response
     # The call to Azure OpenAI is handled in create_chat_completion()
     # This function loops through the responses and displays them as they come in.

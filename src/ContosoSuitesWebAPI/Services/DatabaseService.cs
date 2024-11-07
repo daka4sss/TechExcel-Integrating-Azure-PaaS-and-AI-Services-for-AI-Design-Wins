@@ -43,12 +43,14 @@ public class DatabaseService : IDatabaseService
         return hotels;
     }
 
-/// <summary>
-/// Get all bookings that do not have associated hotel rooms.
-/// </summary>
-public async Task<IEnumerable<Booking>> GetBookingsMissingHotelRooms()
-{
-    var sql = """
+    /// <summary>
+    /// Get all bookings that do not have associated hotel rooms.
+    /// </summary>
+    [KernelFunction]
+    [Description("Return all bookings that do not have associated hotel rooms.")]
+    public async Task<IEnumerable<Booking>> GetBookingsMissingHotelRooms()
+    {
+        var sql = """
         SELECT
             b.BookingID,
             b.CustomerID,
@@ -64,36 +66,38 @@ public async Task<IEnumerable<Booking>> GetBookingsMissingHotelRooms()
                 WHERE b.BookingID = h.BookingID
             );
         """;
-    using var conn = new SqlConnection(
-        connectionString: Environment.GetEnvironmentVariable("SQLAZURECONNSTR_ContosoSuites")!
-    );
-    conn.Open();
-    using var cmd = new SqlCommand(sql, conn);
-    using var reader = await cmd.ExecuteReaderAsync();
-    var bookings = new List<Booking>();
-    while (await reader.ReadAsync())
-    {
-        bookings.Add(new Booking
+        using var conn = new SqlConnection(
+            connectionString: Environment.GetEnvironmentVariable("SQLAZURECONNSTR_ContosoSuites")!
+        );
+        conn.Open();
+        using var cmd = new SqlCommand(sql, conn);
+        using var reader = await cmd.ExecuteReaderAsync();
+        var bookings = new List<Booking>();
+        while (await reader.ReadAsync())
         {
-            BookingID = reader.GetInt32(0),
-            CustomerID = reader.GetInt32(1),
-            HotelID = reader.GetInt32(2),
-            StayBeginDate = reader.GetDateTime(3),
-            StayEndDate = reader.GetDateTime(4),
-            NumberOfGuests = reader.GetInt32(5)
-        });
+            bookings.Add(new Booking
+            {
+                BookingID = reader.GetInt32(0),
+                CustomerID = reader.GetInt32(1),
+                HotelID = reader.GetInt32(2),
+                StayBeginDate = reader.GetDateTime(3),
+                StayEndDate = reader.GetDateTime(4),
+                NumberOfGuests = reader.GetInt32(5)
+            });
+        }
+        conn.Close();
+
+        return bookings;
     }
-    conn.Close();
 
-    return bookings;
-}
-
-/// <summary>
-/// Get all bookings with more than one hotel room associated.
-/// </summary>
-public async Task<IEnumerable<Booking>> GetBookingsWithMultipleHotelRooms()
-{
-    var sql = """
+    /// <summary>
+    /// Get all bookings with more than one hotel room associated.
+    /// </summary>
+    [KernelFunction]
+    [Description("Return all bookings with more than one hotel room.")]
+    public async Task<IEnumerable<Booking>> GetBookingsWithMultipleHotelRooms()
+    {
+        var sql = """
         SELECT
             b.BookingID,
             b.CustomerID,
@@ -109,37 +113,37 @@ public async Task<IEnumerable<Booking>> GetBookingsWithMultipleHotelRooms()
                 WHERE b.BookingID = h.BookingID
             ) > 1;
         """;
-    using var conn = new SqlConnection(
-        connectionString: Environment.GetEnvironmentVariable("SQLAZURECONNSTR_ContosoSuites")!
-    );
-    conn.Open();
-    using var cmd = new SqlCommand(sql, conn);
-    using var reader = await cmd.ExecuteReaderAsync();
-    var bookings = new List<Booking>();
-    while (await reader.ReadAsync())
-    {
-        bookings.Add(new Booking
+        using var conn = new SqlConnection(
+            connectionString: Environment.GetEnvironmentVariable("SQLAZURECONNSTR_ContosoSuites")!
+        );
+        conn.Open();
+        using var cmd = new SqlCommand(sql, conn);
+        using var reader = await cmd.ExecuteReaderAsync();
+        var bookings = new List<Booking>();
+        while (await reader.ReadAsync())
         {
-            BookingID = reader.GetInt32(0),
-            CustomerID = reader.GetInt32(1),
-            HotelID = reader.GetInt32(2),
-            StayBeginDate = reader.GetDateTime(3),
-            StayEndDate = reader.GetDateTime(4),
-            NumberOfGuests = reader.GetInt32(5)
-        });
+            bookings.Add(new Booking
+            {
+                BookingID = reader.GetInt32(0),
+                CustomerID = reader.GetInt32(1),
+                HotelID = reader.GetInt32(2),
+                StayBeginDate = reader.GetDateTime(3),
+                StayEndDate = reader.GetDateTime(4),
+                NumberOfGuests = reader.GetInt32(5)
+            });
+        }
+        conn.Close();
+
+        return bookings;
     }
-    conn.Close();
-
-    return bookings;
-}
-
 
     /// <summary>
     /// Get a specific hotel from the database.
     /// </summary>
     [KernelFunction]
-    [Description("Get all bookings for a single hotel.")]  
-    public async Task<IEnumerable<Booking>> GetBookingsForHotel(int hotelId)
+    [Description("Get all bookings for a single hotel.")]
+    public async Task<IEnumerable<Booking>> GetBookingsForHotel(
+        [Description("The ID of the hotel")] int hotelId)
     {
         var sql = "SELECT BookingID, CustomerID, HotelID, StayBeginDate, StayEndDate, NumberOfGuests FROM dbo.Booking WHERE HotelID = @HotelID";
         using var conn = new SqlConnection(
@@ -170,6 +174,8 @@ public async Task<IEnumerable<Booking>> GetBookingsWithMultipleHotelRooms()
     /// <summary>
     /// Get bookings for a specific hotel that are after a specified date.
     /// </summary>
+    [KernelFunction]
+    [Description("Get all bookings for a single hotel that are after a specified date.")]
     public async Task<IEnumerable<Booking>> GetBookingsByHotelAndMinimumDate(int hotelId, DateTime dt)
     {
         var sql = "SELECT BookingID, CustomerID, HotelID, StayBeginDate, StayEndDate, NumberOfGuests FROM dbo.Booking WHERE HotelID = @HotelID AND StayBeginDate >= @StayBeginDate";
