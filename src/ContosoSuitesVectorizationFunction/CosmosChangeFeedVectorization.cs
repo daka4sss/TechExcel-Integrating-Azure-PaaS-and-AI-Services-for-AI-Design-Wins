@@ -55,34 +55,34 @@ namespace ContosoSuites.Functions
             containerName: ContainerName,
             Connection = "CosmosDBConnectionString",
             LeaseContainerName = "leases",
-            CreateLeaseContainerIfNotExists = true)] IReadOnlyList<MaintenanceRequest> input)
+            CreateLeaseContainerIfNotExists = true)] IReadOnlyList<MaintenanceRequest> maintenanceRequests)
         {
-            var documentsToVectorize = input.Where(t => t.Type != "Vectorized");
-            if (documentsToVectorize.Count() == 0) return null;
+            var filteredMaintenanceRequests = maintenanceRequests.Where(t => t.Type != "Vectorized");
+            if (filteredMaintenanceRequests.Count() == 0) return null;
 
-            foreach (var request in documentsToVectorize)
+            foreach (MaintenanceRequest maintenanceRequest in filteredMaintenanceRequests)
             {
                 try
                 {
                     // Combine the hotel and details fields into a single string for embedding.
-                    var request_text = $"Hotel: {request.Hotel}\n Request Details: {request.Details}";
+                    string request_text = $"Hotel: {maintenanceRequest.Hotel}\n Request Details: {maintenanceRequest.Details}";
                     // Generate a vector for the maintenance request.
                     var embedding = _embeddingClient.GenerateEmbedding(request_text);
                     var requestVector = embedding.Value.Vector;
 
                     // Add the vector embeddings to the maintenance request and mark it as vectorized.
-                    request.RequestVector = requestVector.ToArray();
-                    request.Type = "Vectorized";
-                    _logger.LogInformation($"Generated vector embeddings for maintenance request {request.Id}");
+                    maintenanceRequest.RequestVector = requestVector.ToArray();
+                    maintenanceRequest.Type = "Vectorized";
+                    _logger.LogInformation($"Generated vector embeddings for maintenance request {maintenanceRequest.Id}");
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError(ex, $"Error generating vector embeddings for maintenance request {request.Id}");
+                    _logger.LogError(ex, $"Error generating vector embeddings for maintenance request {maintenanceRequest.Id}");
                 }
             }
 
             // Write the updated documents back to Cosmos DB.
-            return input;
+            return maintenanceRequests;
         }
     }
 
